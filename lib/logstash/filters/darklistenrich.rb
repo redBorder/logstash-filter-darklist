@@ -21,12 +21,12 @@ class LogStash::Filters::DarklistEnrich < LogStash::Filters::Base
   end
 
   def filter(event)
-    src = event.get("src")
-    dst = event.get("dst")
+    src = event.get("lan_ip")
+    dst = event.get("wan_ip")
     if !src.nil? && !dst.nil? then
       srcData = @ipCache['src']
       dstData = @ipCache['dst']
-      if !srcData.nil? && !dstData.nil? then     
+      if !srcData.nil? && !dstData.nil? then
         srcScore = srcData['darklist_score'].to_i
         dstScore = dstData['darklist_score'].to_i
         if (srcScore > dstScore) then
@@ -37,10 +37,10 @@ class LogStash::Filters::DarklistEnrich < LogStash::Filters::Base
         event.set("darklist_direction", "both")
       elsif !srcData.nil? then
         srcData.each {|k,v| event.set(k,v)}
-        event.set("darklist_direction", "source")        
+        event.set("darklist_direction", "source")
       elsif !dstData.nil? then
         dstData.each {|k,v| event.set(k,v)}
-        event.set("darklist_direction", "destination")     
+        event.set("darklist_direction", "destination")
       else
         event.set("darklist_direction", "clean")
         event.set("darklist_category", "clean")
@@ -65,7 +65,7 @@ class LogStash::Filters::DarklistEnrich < LogStash::Filters::Base
       end
     else
       event.set("darklist_direction", "clean")
-      event.set("darklist_category", "clean")    
+      event.set("darklist_category", "clean")
     end
     filter_matched(event)
     #yield event
