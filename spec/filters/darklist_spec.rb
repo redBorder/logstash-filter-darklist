@@ -1,8 +1,8 @@
 # encoding: utf-8
 require 'spec_helper'
-require "logstash/filters/darklistenrich"
+require "logstash/filters/darklist"
 
-describe LogStash::Filters::DarklistEnrich do
+describe LogStash::Filters::Darklist do
   describe "Set to Hello World" do
     let(:config) do <<-CONFIG
       filter {
