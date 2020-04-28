@@ -4,52 +4,44 @@ require "logstash/filters/base"
 require "logstash/namespace"
 require "json"
 
+require_relative "util/memcached_config"
+
 class LogStash::Filters::Darklist < LogStash::Filters::Base
 
   config_name "darklist"
-
-  # Path allows you to indicate the path to the document that you want to load into memory for the creation of the hash.
-  config :path, :validate => :path, :default => "/opt/rb/share/darklist.json", :required => false
+  config :memcached_server,          :validate => :string, :default => nil,                            :required => false
 
   public
   def register
-    # comprobar que el fichero existe 
-    @ipCache = nil 
-    if File.exist?(@path) then
-      begin
-        darklist_list = JSON.parse(File.read(@path))
-        @ipCache = darklist_list.map { |n| [n["ip"], n["enrich_with"]] }.to_h
-      rescue
-         @ipCache = nil 
-      end 
-    end 
+    @memcached_server = @memcached_server || MemcachedConfig::servers
+    @memcached = Dalli::Client.new(@memcached_server, {:expires_in => 0, :value_max_bytes => 4000000})
   end
 
   def filter(event)
-    if @ipCache
-      src = event.get("lan_ip")
-      dst = event.get("wan_ip")
+
+    src = event.get("lan_ip")
+    dst = event.get("wan_ip")
+  
+    eventData = {}  
+    eventData['darklist_direction'] = "clean"
+    eventData['darklist_category'] = "clean"
     
-      eventData = {}  
-      eventData['darklist_direction'] = "clean"
-      eventData['darklist_category'] = "clean"
-      
-      srcData = @ipCache[src] if src 
-      dstData = @ipCache[dst] if dst 
+    srcData = @memcached.get("darklist-#{src}") if src
+    dstData = @memcached.get("darklist-#{dst}") if dst
+  
+    if srcData and dstData then
+      eventData = (srcData['darklist_score'].to_i > dstData['darklist_score'].to_i) ? srcData : dstData
+      eventData['darklist_direction'] =  "both"
+    elsif srcData
+      eventData = srcData
+      eventData['darklist_direction'] = "source"
+    elsif dstData  
+      eventData = dstData
+      eventData['darklist_direction'] = "destination"
+    end 
+          
+    eventData.each {|k,v| event.set(k,v)}
     
-      if srcData and dstData then
-        eventData = (srcData['darklist_score'].to_i > dstData['darklist_score'].to_i) ? srcData : dstData
-        eventData['darklist_direction'] =  "both"
-      elsif srcData
-        eventData = srcData
-        eventData['darklist_direction'] = "source"
-      elsif dstData  
-        eventData = dstData
-        eventData['darklist_direction'] = "destination"
-      end 
-            
-      eventData.each {|k,v| event.set(k,v)}
-    end
     filter_matched(event)
     #yield event
   end  # def filter
