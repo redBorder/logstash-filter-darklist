@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'logstash-filter-darklist'
-  s.version = '1.0.6'
+  s.version = '1.0.7'
   s.licenses = ['GNU Affero General Public License']
   s.summary = "This filter classifies the ip analyzed in the event and categorizes it according to its origin."
   s.description = "This gem is a Logstash plugin required to be installed on top of the Logstash core pipeline using $LS_HOME/bin/logstash-plugin install gemname. This gem is not a stand-alone program"
@@ -20,5 +20,6 @@ Gem::Specification.new do |s|
   # Gem dependencies
   s.add_runtime_dependency "logstash-core-plugin-api", "~> 2.0"
   s.add_runtime_dependency "jruby-memcached"
+  s.add_runtime_dependency "dalli"
   s.add_development_dependency 'logstash-devutils'
 end

@@ -4,6 +4,7 @@ require "logstash/filters/base"
 require "logstash/namespace"
 require "json"
 require "ipaddr"
+require "dalli"
 ￼
 require_relative "util/memcached_config"
 
